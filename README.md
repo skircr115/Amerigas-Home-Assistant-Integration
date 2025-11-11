@@ -1,40 +1,96 @@
-# AmeriGas Home Assistant Integration - Complete Package
+# AmeriGas Home Assistant Integration
 
-A complete Home Assistant integration for monitoring your AmeriGas propane account, including tank level, delivery history, payments, and Energy Dashboard integration.
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+[![GitHub Release](https://img.shields.io/github/release/skircr115/ha-amerigas.svg)](https://github.com/skircr115/ha-amerigas/releases)
+[![License](https://img.shields.io/github/license/skircr115/ha-amerigas.svg)](LICENSE)
 
-## 📋 Features
+> **Unofficial** Home Assistant integration for monitoring your AmeriGas propane account. Track tank levels, deliveries, payments, and integrate with the Energy Dashboard.
 
-- **Real-time Tank Monitoring** - Current tank level, gallons remaining, days until empty
-- **Delivery Tracking** - Last delivery date, gallons delivered, next scheduled delivery
-- **Payment Information** - Amount due, account balance, last payment details
-- **Cost Analysis** - Cost per gallon, estimated refill cost, usage rates
-- **Energy Dashboard Integration** - Track propane consumption alongside electricity
-- **Automated Updates** - Auto-refresh every 6 hours + on Home Assistant startup
+![AmeriGas Dashboard](https://via.placeholder.com/800x400?text=Dashboard+Screenshot)
 
-## 📦 What's Included
+## ✨ Features
 
-- 15 sensors from AmeriGas portal
-- 8 calculated template sensors for usage tracking
-- 9 utility meters (daily/monthly/yearly for gallons, energy, and cost)
-- Energy Dashboard ready with cost tracking
-- Example automations and dashboard cards
+- 🔥 **Real-time Tank Monitoring** - Current level, gallons remaining, days until empty
+- 🚚 **Delivery Tracking** - Last/next delivery dates, gallons delivered
+- 💰 **Payment Information** - Amount due, account balance, payment history
+- 📊 **Usage Analytics** - Daily/monthly/yearly consumption and costs
+- ⚡ **Energy Dashboard** - Full integration with Home Assistant Energy Dashboard
+- 🔔 **Smart Alerts** - Low propane, high usage, payment due notifications
+- 📈 **Cost Tracking** - Per-gallon pricing, estimated refill costs
 
----
+## 📋 Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Sensors](#sensors)
+- [Energy Dashboard](#energy-dashboard)
+- [Dashboard Cards](#dashboard-cards)
+- [Automations](#automations)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
+## 🎯 Prerequisites
+
+- Home Assistant Core 2023.1 or later
+- [Pyscript](https://github.com/custom-components/pyscript) installed via HACS
+- Active MyAmeriGas online account
+- AmeriGas propane service with tank monitoring (optional, but recommended)
 
 ## 🚀 Installation
 
-### Prerequisites
+### Method 1: Manual Installation
 
-1. **Pyscript** - Install via HACS
-   - Go to HACS > Integrations
+1. **Install Pyscript via HACS**
+   - Go to HACS → Integrations
+   - Click "Explore & Download Repositories"
    - Search for "Pyscript Python scripting"
    - Install and restart Home Assistant
 
-2. **AmeriGas Account** - Active MyAmeriGas online account credentials
+2. **Create Directory Structure**
+   ```bash
+   mkdir -p config/pyscript
+   ```
 
-### Step 1: Enable Pyscript
+3. **Download Files**
+   - Download [`amerigas.py`](pyscript/amerigas.py) to `config/pyscript/`
+   - Download [`template_sensors.yaml`](template_sensors.yaml) to `config/`
+   - Download [`utility_meter.yaml`](utility_meter.yaml) to `config/`
 
-Add to `configuration.yaml`:
+4. **Update `configuration.yaml`**
+   ```yaml
+   pyscript:
+     allow_all_imports: true
+     hass_is_global: true
+     apps:
+       amerigas:
+         username: "your_email@example.com"
+         password: "your_password"
+   
+   template: !include template_sensors.yaml
+   utility_meter: !include utility_meter.yaml
+   ```
+
+5. **Restart Home Assistant**
+
+### Method 2: Git Clone
+
+```bash
+cd config
+git clone https://github.com/skircr115/ha-amerigas.git
+cp ha-amerigas/pyscript/amerigas.py pyscript/
+cp ha-amerigas/template_sensors.yaml .
+cp ha-amerigas/utility_meter.yaml .
+```
+
+Then update `configuration.yaml` as shown above.
+
+## ⚙️ Configuration
+
+### Basic Configuration
+
+Add to your `configuration.yaml`:
 
 ```yaml
 pyscript:
@@ -43,96 +99,119 @@ pyscript:
   apps:
     amerigas:
       username: "your_email@example.com"
-      password: "your_password_here"
+      password: "your_password"
+
+template: !include template_sensors.yaml
+utility_meter: !include utility_meter.yaml
 ```
 
-⚠️ **Important:** Credentials must be in `configuration.yaml` under `pyscript:`, NOT in `secrets.yaml`
+⚠️ **Security Note:** Credentials must be in `configuration.yaml` under `pyscript:`. Pyscript cannot access `secrets.yaml` directly.
 
-### Step 2: Create Directory Structure
+### Optional: Adjust Tank Size
 
+If your tank is not 500 gallons, update in `template_sensors.yaml`:
+
+```yaml
+- sensor:
+    - name: "Propane Tank Gallons Remaining"
+      state: >
+        {% set tank_capacity_gallons = 1000 %}  # Change to your tank size
+        ...
 ```
-config/
-├── pyscript/
-│   └── amerigas.py
-├── template_sensors.yaml
-├── utility_meter.yaml
-└── configuration.yaml
+
+### Optional: Disable Auto-Updates
+
+To disable automatic updates, comment out in `pyscript/amerigas.py`:
+
+```python
+# @time_trigger("cron(0 */6 * * *)")
+# async def amerigas_scheduled():
+#     """Run update every 6 hours"""
+#     ...
 ```
 
-### Step 3: Install/Update Files provided in this repository
+## 📊 Sensors
 
-### Step 4: Restart Home Assistant
+### AmeriGas Portal Sensors (15)
 
-After all files are in place:
-1. Go to **Settings > System > Restart**
-2. Wait for restart to complete
+| Sensor | Description | Unit |
+|--------|-------------|------|
+| `sensor.amerigas_tank_level` | Current tank percentage | % |
+| `sensor.amerigas_tank_size` | Tank capacity | gal |
+| `sensor.amerigas_days_remaining` | AmeriGas estimate | days |
+| `sensor.amerigas_amount_due` | Current bill amount | $ |
+| `sensor.amerigas_account_balance` | Account balance | $ |
+| `sensor.amerigas_last_payment_date` | Last payment date | timestamp |
+| `sensor.amerigas_last_payment_amount` | Last payment amount | $ |
+| `sensor.amerigas_last_tank_reading` | Last monitor reading | timestamp |
+| `sensor.amerigas_last_delivery_date` | Last delivery date | timestamp |
+| `sensor.amerigas_last_delivery_gallons` | Gallons delivered | gal |
+| `sensor.amerigas_next_delivery_date` | Next scheduled delivery | timestamp |
+| `sensor.amerigas_auto_pay` | Auto pay status | text |
+| `sensor.amerigas_paperless` | Paperless billing status | text |
+| `sensor.amerigas_account_number` | Account number | text |
+| `sensor.amerigas_service_address` | Service address | text |
 
----
+### Calculated Sensors (11)
 
-## ✅ Verify Installation
+| Sensor | Description | Unit |
+|--------|-------------|------|
+| `sensor.propane_tank_gallons_remaining` | Gallons left in tank | gal |
+| `sensor.propane_used_since_last_delivery` | Gallons consumed | gal |
+| `sensor.propane_energy_consumption` | Consumption in cubic feet | ft³ |
+| `sensor.propane_daily_average_usage` | Daily usage rate | gal/day |
+| `sensor.propane_days_until_empty` | Your estimate based on usage | days |
+| `sensor.propane_cost_per_gallon` | Price per gallon | $/gal |
+| `sensor.propane_cost_per_cubic_foot` | Price per cubic foot | $/ft³ |
+| `sensor.propane_cost_since_last_delivery` | Current period cost | $ |
+| `sensor.propane_estimated_refill_cost` | Estimated next fill cost | $ |
+| `sensor.propane_days_since_last_delivery` | Days since last fill | days |
+| `sensor.propane_days_remaining_difference` | Comparison vs AmeriGas | days |
 
-### Check Sensors
-Go to **Developer Tools > States** and search for "amerigas" - you should see 15 sensors:
+### Utility Meters (9)
 
-**AmeriGas Portal Sensors:**
-- `sensor.amerigas_tank_level` - Current tank percentage
-- `sensor.amerigas_tank_size` - Tank capacity in gallons
-- `sensor.amerigas_days_remaining` - AmeriGas's estimate
-- `sensor.amerigas_amount_due` - Current bill amount
-- `sensor.amerigas_account_balance` - Account balance
-- `sensor.amerigas_last_payment_date` - Last payment date
-- `sensor.amerigas_last_payment_amount` - Last payment amount
-- `sensor.amerigas_last_tank_reading` - Last monitor reading timestamp
-- `sensor.amerigas_last_delivery_date` - Last delivery date
-- `sensor.amerigas_last_delivery_gallons` - Gallons delivered
-- `sensor.amerigas_next_delivery_date` - Next scheduled delivery (if any)
-- `sensor.amerigas_auto_pay` - Auto pay status
-- `sensor.amerigas_paperless` - Paperless billing status
-- `sensor.amerigas_account_number` - Your account number
-- `sensor.amerigas_service_address` - Service address
+**Gallons Tracking:**
+- `sensor.daily_propane_gallons`
+- `sensor.monthly_propane_gallons`
+- `sensor.yearly_propane_gallons`
 
-**Calculated Sensors:**
-- `sensor.propane_tank_gallons_remaining` - Gallons left in tank
-- `sensor.propane_used_since_last_delivery` - Gallons consumed
-- `sensor.propane_energy_consumption` - Consumption in ft³ (Energy Dashboard)
-- `sensor.propane_daily_average_usage` - Usage rate (gal/day)
-- `sensor.propane_days_until_empty` - Your estimate based on usage
-- `sensor.propane_cost_per_gallon` - $/gallon from last delivery
-- `sensor.propane_cost_per_cubic_foot` - $/ft³ for Energy Dashboard
-- `sensor.propane_cost_since_last_delivery` - Current cost
+**Energy Dashboard (ft³):**
+- `sensor.daily_propane_energy`
+- `sensor.monthly_propane_energy`
+- `sensor.yearly_propane_energy`
 
-### Manual Update
-Call the service to fetch data:
-1. Go to **Developer Tools > Services**
-2. Select service: `pyscript.amerigas_update`
-3. Click **Call Service**
+**Cost Tracking:**
+- `sensor.daily_propane_cost`
+- `sensor.monthly_propane_cost`
+- `sensor.yearly_propane_cost`
 
-Check logs at **Settings > System > Logs** - search for "AmeriGas"
+## ⚡ Energy Dashboard
 
----
+### Setup
 
-## 📊 Energy Dashboard Setup
+1. **Add Gas Source**
+   - Go to Settings → Dashboards → Energy
+   - Click "Add Gas Source"
+   - Select: `Propane Energy Consumption`
 
-### Add Gas Source
-1. Go to **Settings > Dashboards > Energy**
-2. Click **"Add Gas Source"**
-3. Select: **`Propane Energy Consumption`**
-4. Optional: Add cost tracking
-   - Select: **`Propane Cost Since Last Delivery`**
-   - Or enter fixed price per ft³
+2. **Add Cost Tracking**
+   - Click on the gas source you added
+   - Under "Use an entity tracking the total costs"
+   - Select: `Propane Cost Since Last Delivery`
 
-### View in Energy Dashboard
-Your propane consumption will now appear alongside electricity in the Energy Dashboard with:
-- 📈 Consumption graphs
-- 💰 Cost tracking
-- 📊 Historical comparisons
-- 🔥 Daily/Monthly/Yearly totals
+### Result
 
----
+Your Energy Dashboard will show:
+- 📊 Daily/Monthly/Yearly propane consumption
+- 💰 Cost tracking and trends
+- 📈 Comparison with electricity usage
+- 🔥 Total BTU/energy consumption
 
-## 🎨 Example Dashboard Cards
+![Energy Dashboard](https://via.placeholder.com/800x400?text=Energy+Dashboard+Screenshot)
 
-### Card 1: Tank Status
+## 🎨 Dashboard Cards
+
+### Tank Status Gauge
 
 ```yaml
 type: vertical-stack
@@ -152,8 +231,6 @@ cards:
     entities:
       - entity: sensor.propane_tank_gallons_remaining
         name: Gallons Remaining
-      - entity: sensor.amerigas_tank_size
-        name: Tank Capacity
       - entity: sensor.amerigas_days_remaining
         name: Days Left (AmeriGas)
       - entity: sensor.propane_days_until_empty
@@ -162,7 +239,7 @@ cards:
         name: Last Reading
 ```
 
-### Card 2: Usage & Costs
+### Usage & Costs Card
 
 ```yaml
 type: entities
@@ -183,7 +260,7 @@ entities:
     name: Est. Refill Cost
 ```
 
-### Card 3: Account Info
+### Account Information Card
 
 ```yaml
 type: entities
@@ -204,16 +281,9 @@ entities:
     name: Gallons Delivered
   - entity: sensor.amerigas_next_delivery_date
     name: Next Delivery
-  - type: divider
-  - entity: sensor.amerigas_auto_pay
-    name: Auto Pay
-  - entity: sensor.amerigas_paperless
-    name: Paperless Billing
-  - entity: sensor.amerigas_account_number
-    name: Account Number
 ```
 
-### Card 4: Quick Update Button
+### Quick Update Button
 
 ```yaml
 type: button
@@ -224,9 +294,7 @@ tap_action:
   service: pyscript.amerigas_update
 ```
 
----
-
-## 🔔 Example Automations
+## 🔔 Automations
 
 ### Low Propane Alert
 
@@ -277,28 +345,6 @@ action:
             uri: https://www.myamerigas.com
 ```
 
-### Propane Running Low
-
-```yaml
-alias: "Propane Running Low"
-description: "Alert when less than 14 days of propane remaining"
-trigger:
-  - platform: numeric_state
-    entity_id: sensor.propane_days_until_empty
-    below: 14
-action:
-  - service: notify.mobile_app_your_phone
-    data:
-      title: "Propane Running Low"
-      message: >
-        Only {{ states('sensor.propane_days_until_empty') }} days remaining
-        ({{ states('sensor.amerigas_tank_level') }}% / 
-        {{ states('sensor.propane_tank_gallons_remaining') }} gallons).
-        Daily usage: {{ states('sensor.propane_daily_average_usage') }} gal/day
-      data:
-        importance: high
-```
-
 ### High Usage Alert
 
 ```yaml
@@ -317,123 +363,184 @@ action:
         which is higher than normal. Check for leaks or unusual consumption.
 ```
 
-### Weekly Report
-
-```yaml
-alias: "Weekly Propane Report"
-description: "Send weekly propane usage report"
-trigger:
-  - platform: time
-    at: "08:00:00"
-  - platform: time
-    weekday: sun
-action:
-  - service: notify.mobile_app_your_phone
-    data:
-      title: "Weekly Propane Report"
-      message: >
-        Tank: {{ states('sensor.amerigas_tank_level') }}%
-        ({{ states('sensor.propane_tank_gallons_remaining') }} gal)
-        
-        This week: {{ states('sensor.daily_propane_gallons') }} gallons used
-        Avg usage: {{ states('sensor.propane_daily_average_usage') }} gal/day
-        Days remaining: {{ states('sensor.propane_days_until_empty') }}
-        
-        Cost this period: ${{ states('sensor.propane_cost_since_last_delivery') }}
-```
-
----
+[More automation examples →](docs/AUTOMATIONS.md)
 
 ## 🔧 Troubleshooting
 
 ### Sensors Show "Unavailable"
-1. Check Pyscript is loaded: **Settings > Devices & Services > Pyscript**
-2. Check credentials in `configuration.yaml` under `pyscript: > apps: > amerigas:`
-3. Check logs: **Settings > System > Logs** - search for "AmeriGas"
-4. Manually run: `pyscript.amerigas_update` service
+
+**Check Pyscript Status:**
+```
+Settings → Devices & Services → Pyscript
+```
+
+**Verify Credentials:**
+- Check `configuration.yaml` has correct username/password under `pyscript: > apps: > amerigas:`
+- Test login at https://www.myamerigas.com
+
+**Check Logs:**
+```
+Settings → System → Logs
+Search for: "AmeriGas"
+```
+
+**Manual Update:**
+```
+Developer Tools → Services
+Service: pyscript.amerigas_update
+Call Service
+```
 
 ### Login Fails
-- Verify credentials work on https://www.myamerigas.com
-- Check for special characters in password (may need escaping in YAML)
-- Look for error messages in logs
 
-### Template Errors
+- Verify credentials work on MyAmeriGas website
+- Check for special characters in password (may need quotes)
+- Review error messages in logs
+
+### Template Sensor Errors
+
 - Ensure `template_sensors.yaml` is included in `configuration.yaml`
-- Check for YAML syntax errors
-- Reload templates: **Developer Tools > YAML > Reload Template Entities**
+- Check YAML syntax with: `Developer Tools → YAML → Check Configuration`
+- Reload templates: `Developer Tools → YAML → Reload Template Entities`
 
 ### Energy Dashboard Not Showing Propane
-- Verify `sensor.propane_energy_consumption` has:
-  - `device_class: gas`
-  - `state_class: total_increasing`
-  - `unit_of_measurement: ft³` (with superscript 3)
-- Check **Developer Tools > Statistics** for errors
 
-### Cost Tracking Not Working
-- Ensure last payment and delivery data exists
-- Check `sensor.propane_cost_per_gallon` has a value
-- Verify `sensor.propane_cost_since_last_delivery` is updating
+**Verify sensor attributes:**
+```
+Developer Tools → States → sensor.propane_energy_consumption
+```
 
----
+Should have:
+- `device_class: gas`
+- `state_class: total_increasing`
+- `unit_of_measurement: ft³`
 
-## 📝 Notes
+**Check for statistics errors:**
+```
+Developer Tools → Statistics
+Search for: propane_energy_consumption
+```
 
-- **Update Frequency:** Data updates every 6 hours automatically (configurable in script)
-- **Manual Updates:** Call `pyscript.amerigas_update` service anytime
-- **Tank Size:** Default is 500 gallons - adjust in templates if different
-- **Conversion Factor:** 1 gallon propane = 36.3888 cubic feet
-- **Next Delivery:** May show "unknown" for automatic delivery customers
-- **Credentials:** Stored in `configuration.yaml` (Pyscript can't access secrets.yaml)
+### Cost Tracking Issues
 
----
+- Ensure you have received at least one delivery
+- Verify `sensor.amerigas_last_payment_amount` has a value
+- Check `sensor.propane_cost_per_gallon` is calculating correctly
 
-## 🔐 Security Notes
+[Full troubleshooting guide →](docs/TROUBLESHOOTING.md)
 
-⚠️ Your AmeriGas credentials are stored in plain text in `configuration.yaml`
+## 📝 How It Works
 
-**To improve security:**
-1. Set appropriate file permissions: `chmod 600 configuration.yaml`
-2. Ensure Home Assistant is not exposed to the internet without proper authentication
-3. Consider using a dedicated AmeriGas account with limited permissions
-4. Regularly rotate your password
+1. **Pyscript** logs into your MyAmeriGas account every 6 hours
+2. **Scrapes** the dashboard HTML for account data
+3. **Parses** JavaScript variables containing account information
+4. **Creates** 15 sensors with data from AmeriGas portal
+5. **Template sensors** calculate usage, costs, and conversions
+6. **Utility meters** track daily/monthly/yearly consumption
+7. **Energy Dashboard** displays propane alongside electricity
 
----
+### Data Flow
 
-## 📚 Additional Resources
+```
+MyAmeriGas Portal
+       ↓
+  Pyscript (amerigas.py)
+       ↓
+  15 Base Sensors
+       ↓
+  Template Sensors (calculations)
+       ↓
+  Utility Meters (tracking)
+       ↓
+  Energy Dashboard
+```
 
-- **Home Assistant Pyscript Docs:** https://hacs-pyscript.readthedocs.io/
-- **Home Assistant Energy Dashboard:** https://www.home-assistant.io/docs/energy/
-- **Template Sensors:** https://www.home-assistant.io/integrations/template/
-- **Utility Meters:** https://www.home-assistant.io/integrations/utility_meter/
+## 🔐 Security & Privacy
 
----
+⚠️ **Important Security Notes:**
+
+- Credentials are stored in plain text in `configuration.yaml`
+- This integration scrapes the MyAmeriGas website (no official API)
+- Data is processed locally on your Home Assistant instance
+- No data is sent to third parties
+
+**Recommendations:**
+- Set appropriate file permissions: `chmod 600 configuration.yaml`
+- Ensure Home Assistant is not exposed without authentication
+- Use strong, unique credentials
+- Consider a dedicated AmeriGas account for monitoring
+- Regularly rotate your password
 
 ## 🤝 Contributing
 
-Found a bug or want to improve this integration?
-- Report issues with detailed logs
-- Share your dashboard cards and automations
-- Suggest new features or sensors
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) first.
 
----
+### Ways to Contribute
+
+- 🐛 Report bugs via [GitHub Issues](https://github.com/skircr115/ha-amerigas/issues)
+- 💡 Suggest features or improvements
+- 📖 Improve documentation
+- 🎨 Share your dashboard cards
+- 🔔 Submit automation examples
+- 🔧 Submit pull requests
+
+### Development Setup
+
+```bash
+git clone https://github.com/skircr115/ha-amerigas.git
+cd ha-amerigas
+# Make your changes
+# Test thoroughly
+# Submit PR
+```
+
+## 📚 Additional Resources
+
+- [Home Assistant Pyscript Documentation](https://hacs-pyscript.readthedocs.io/)
+- [Home Assistant Energy Dashboard](https://www.home-assistant.io/docs/energy/)
+- [Template Sensor Documentation](https://www.home-assistant.io/integrations/template/)
+- [Utility Meter Documentation](https://www.home-assistant.io/integrations/utility_meter/)
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=skircr115/ha-amerigas&type=Date)](https://star-history.com/#skircr115/ha-amerigas&Date)
 
 ## 📜 License
 
-This integration is provided as-is for personal use. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-**Disclaimer:** This is an unofficial integration and is not affiliated with or endorsed by AmeriGas. Use at your own risk. Always verify propane levels manually and follow AmeriGas safety guidelines.
+## ⚠️ Disclaimer
+
+**This is an unofficial integration and is not affiliated with, endorsed by, or connected to AmeriGas.**
+
+- Use at your own risk
+- Always verify propane levels manually
+- Follow AmeriGas safety guidelines
+- This integration relies on web scraping and may break if AmeriGas changes their website
+- The developers are not responsible for any issues arising from use of this integration
+
+## 🙏 Acknowledgments
+
+- Built for the [Home Assistant](https://www.home-assistant.io/) community
+- Powered by [Pyscript](https://github.com/custom-components/pyscript)
+- Inspired by the need for better propane monitoring
+- Thanks to all contributors and users!
+
+## 💬 Support
+
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/skircr115/ha-amerigas/issues)
+- 💡 **Feature Requests:** [GitHub Discussions](https://github.com/skircr115/ha-amerigas/discussions)
+- 💬 **Community:** [Home Assistant Forum](https://community.home-assistant.io/)
+- 📧 **Email:** your.email@example.com
 
 ---
 
-## 🎉 Credits
+<div align="center">
 
-Created for the Home Assistant community. Special thanks to:
-- Pyscript developers for the amazing integration
-- Home Assistant community for templates and ideas
-- AmeriGas customers who needed better monitoring
+**If this integration helped you, please ⭐ star the repo!**
 
----
+Made with ❤️ for the Home Assistant community
 
-## ✨ Enjoy Your Smart Propane Monitoring!
+[Report Bug](https://github.com/skircr115/ha-amerigas/issues) · [Request Feature](https://github.com/skircr115/ha-amerigas/issues) · [Discussions](https://github.com/skircr115/ha-amerigas/discussions)
 
-You now have complete visibility into your propane usage, costs, and account status right in Home Assistant. Stay safe and never run out of propane again! 🔥
+</div>
