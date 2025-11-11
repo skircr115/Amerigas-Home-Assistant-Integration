@@ -6,8 +6,6 @@
 
 > **Unofficial** Home Assistant integration for monitoring your AmeriGas propane account. Track tank levels, deliveries, payments, and integrate with the Energy Dashboard.
 
-![AmeriGas Dashboard](https://via.placeholder.com/800x400?text=Dashboard+Screenshot)
-
 ## ✨ Features
 
 - 🔥 **Real-time Tank Monitoring** - Current level, gallons remaining, days until empty
