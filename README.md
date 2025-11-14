@@ -522,7 +522,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built for the [Home Assistant](https://www.home-assistant.io/) community
 - Powered by [Pyscript](https://github.com/custom-components/pyscript)
 - Inspired by the need for better propane monitoring
-- Thanks to all contributors and users!
+- Thanks to all contributors and users! (@Ricket)
 
 ## 💬 Support
 
