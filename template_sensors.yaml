@@ -1,7 +1,7 @@
 # =============================================================================
 # Template Sensors for Propane Calculations
 # =============================================================================
-
+- sensor:
     # Gallons Remaining
     - name: "Propane Tank Gallons Remaining"
       unique_id: propane_tank_gallons_remaining
