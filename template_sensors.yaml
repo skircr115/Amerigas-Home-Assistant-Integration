@@ -1,5 +1,7 @@
+# =============================================================================
 # Template Sensors for Propane Calculations
-- sensor:
+# =============================================================================
+
     # Gallons Remaining
     - name: "Propane Tank Gallons Remaining"
       unique_id: propane_tank_gallons_remaining
@@ -136,6 +138,9 @@
         {% else %}
           {{ 0 }}
         {% endif %}
+      availability: >
+        {% set cost = states('sensor.propane_cost_per_gallon') %}
+        {{ cost not in ['unknown', 'unavailable', 'none'] and cost | float(0) > 0 }}
     
     # Total Cost This Fill-Up Period
     - name: "Propane Cost Since Last Delivery"
@@ -148,6 +153,12 @@
         {% set used_gallons = states('sensor.propane_used_since_last_delivery') | float(0) %}
         {% set cost_per_gal = states('sensor.propane_cost_per_gallon') | float(0) %}
         {{ (used_gallons * cost_per_gal) | round(2) }}
+      availability: >
+        {% set used = states('sensor.propane_used_since_last_delivery') %}
+        {% set cost = states('sensor.propane_cost_per_gallon') %}
+        {{ used not in ['unknown', 'unavailable', 'none'] and 
+           cost not in ['unknown', 'unavailable', 'none'] and
+           cost | float(0) > 0 }}
 
     # Estimated Cost to Refill
     - name: "Propane Estimated Refill Cost"
